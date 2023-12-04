@@ -1,11 +1,11 @@
-import qualified Data.Map.Strict as M
-import Data.List
-import Data.List.Split
-import Data.Char
-import Data.Maybe (fromJust)
-import Data.Ord
-import Debug.Trace
-import Text.Pretty.Simple
+import           Data.Char
+import           Data.List
+import           Data.List.Split
+import qualified Data.Map.Strict    as M
+import           Data.Maybe         (fromJust)
+import           Data.Ord
+import           Debug.Trace
+import           Text.Pretty.Simple
 
 data Point = Point {_x :: Int, _y :: Int} deriving (Eq, Show)
 type PartNumber = [(Point, Char)]
