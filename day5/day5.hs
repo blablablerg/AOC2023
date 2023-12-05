@@ -16,7 +16,6 @@ import qualified Data.Text.IO               as T
 import           Debug.Trace                ()
 import           Text.Pretty.Simple
 
-
 data Amap = Amap {_source :: Int, _dest :: Int, _range :: Int} deriving (Show)
 makeLenses ''Amap
 
@@ -59,7 +58,6 @@ convertRange :: Amap' -> Range -> (Maybe Range, [Range])
 convertRange (Amap' x j) y = case getIandD y x of
                                (Nothing, rest) -> (Nothing, rest)
                                (Just (y'1, y'2), rest) -> (Just (y'1 +j, y'2 + j), rest)
-
 
 convert :: [Amap'] -> Int -> Int
 convert []                   i             = i
