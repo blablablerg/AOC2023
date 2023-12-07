@@ -6,16 +6,16 @@
 import           Control.Applicative
 import           Control.Lens
 import           Control.Lens.TH
-import qualified Data.Attoparsec.Text       as P
+import qualified Data.Attoparsec.Text as P
+import           Data.Char
 import           Data.Either
 import           Data.List
-import qualified Data.Map.Strict            as M
+import qualified Data.Map.Strict      as M
 import           Data.Maybe
-import qualified Data.Text                  as T
-import qualified Data.Text.IO               as T
-import           Debug.Trace                ()
-import Data.Ord
-import Data.Char
+import           Data.Ord
+import qualified Data.Text            as T
+import qualified Data.Text.IO         as T
+import           Debug.Trace          ()
 import           Text.Pretty.Simple
 
 -- Niet de meest efficiente code maar het werkt
