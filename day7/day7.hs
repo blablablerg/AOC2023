@@ -18,20 +18,18 @@ import qualified Data.Text.IO         as T
 import           Debug.Trace          ()
 import           Text.Pretty.Simple
 
--- Niet de meest efficiente code maar het werkt
-
 data CardBid = CardBid {_hand :: String, _bid :: Int} deriving (Eq, Show)
 makeLenses ''CardBid
 
-data CardBid2 = CardBid2 {_hand2 :: String, _bid2 :: Int} deriving (Eq, Show)
+data CardBid2 = CardBid2 {_hand2 :: (String, String), _bid2 :: Int} deriving (Eq, Show)
 makeLenses ''CardBid2
 
 instance Ord CardBid where
   compare = comparing (handType . _hand) <> comparing (hand2Ints . _hand)
 
 instance Ord CardBid2 where
-  compare = comparing (handType . convertJokers . _hand2) <>
-            comparing (hand2Ints . convertJoker . _hand2)
+  compare = comparing (handType . fst . _hand2) <>
+            comparing (hand2Ints . snd . _hand2)
 
 main = do
   inputdata <- T.readFile "input"
@@ -43,7 +41,7 @@ main = do
   print $ part2
 
 mkCard2 :: CardBid -> CardBid2
-mkCard2 (CardBid hand bid) = CardBid2 hand bid
+mkCard2 (CardBid hand bid) = CardBid2 (convertJokers hand, convertJoker hand) bid
 
 convertJokers :: String -> String
 convertJokers hand = minimumBy (comparing (Down . handType) <> comparing (Down . hand2Ints)) (explodeJokers hand)
