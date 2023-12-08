@@ -26,19 +26,9 @@ main = do
   let (Right (instructions, nodes)) = P.parseOnly parseDocuments inputdata
   let part1 =  traverseNodes instructions nodes (nodes ^?! folded . filtered ((== "AAA") . _node))
                                                 (nodes ^?! folded . filtered ((== "ZZZ") . _node))
-  let part2 = foldl' getDivisor 1 $
+  let part2 = foldl' lcm 1 $
               map (traverseNodes2 instructions nodes) (nodes ^.. folded . filtered ((\n -> last n == 'A') . _node))
   print $ part2
-
-getDivisor :: Int -> Int -> Int
-getDivisor = getDivisor' 1
-
-getDivisor' :: Int -> Int -> Int -> Int
-getDivisor' i x y = let q =  i * max x y
-                        d = min x y
-                       in if  mod q d == 0
-                          then q
-                          else getDivisor' (i + 1) x y
 
 traverseNodes2 :: String -> [Node] -> Node -> Int
 traverseNodes2 insts = traverseNodes2' (cycle insts) 0
