@@ -36,12 +36,11 @@ main = do
   let (Right cardbids) = P.parseOnly parseCardBids inputdata
   let part1 = snd . foldl' (\acc cardbid -> (fst acc + 1, snd acc + fst acc * cardbid._bid)) (1,0) $ sort cardbids
   let cardbids2 = map mkCard2 cardbids
-  let part2 = snd . foldl' (\acc cardbid2 -> (fst acc + 1, snd acc + fst acc * cardbid2._bid2)) (1,0)
-              $ sort cardbids2
+  let part2 = snd . foldl' (\acc cardbid2 -> (fst acc + 1, snd acc + fst acc * cardbid2._bid2)) (1,0) $ sort cardbids2
   print $ part2
 
 mkCard2 :: CardBid -> CardBid2
-mkCard2 (CardBid hand bid) = CardBid2 (convertJokers hand, convertJoker hand) bid
+mkCard2 (CardBid hand bid) = CardBid2 (convertJokers hand, convertJokerTo1 hand) bid
 
 convertJokers :: String -> String
 convertJokers hand = minimumBy (comparing (Down . handType) <> comparing (Down . hand2Ints)) (explodeJokers hand)
@@ -57,8 +56,8 @@ explodeJoker :: Int -> String -> [String]
 explodeJoker i hand | hand !! i == 'J' = map (\n -> hand & ix i .~ n) (map intToDigit [1 .. 9] ++ ['A', 'K', 'Q', 'T'])
                     | otherwise       = [hand]
 
-convertJoker :: String -> String
-convertJoker hand = hand & each %~ (\c -> if c == 'J' then '1' else c)
+convertJokerTo1 :: String -> String
+convertJokerTo1 hand = hand & each %~ (\c -> if c == 'J' then '1' else c)
 
 handType :: String -> [Int]
 handType = sortOn Down . map length  . group . sort
