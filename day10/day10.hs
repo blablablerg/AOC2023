@@ -1,7 +1,10 @@
-{-# Language TemplateHaskell #-}
-{-# Language OverloadedStrings #-}
-{-# Language OverloadedRecordDot #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
+import           Control.Lens
+import           Control.Lens.TH
+import           Data.Bifunctor
 import           Data.Char
 import           Data.List
 import           Data.List.Split
@@ -10,9 +13,6 @@ import           Data.Maybe
 import           Data.Ord
 import           Debug.Trace
 import           Text.Pretty.Simple
-import Control.Lens
-import Control.Lens.TH
-import Data.Bifunctor
 
 data Point = Point {_x :: Int, _y :: Int} deriving (Eq, Show)
 makeLenses ''Point
@@ -24,6 +24,7 @@ instance Ord Point where
 type PipeMap = M.Map Point Char
 type PipeList = [(Point, Char)]
 
+main :: IO ()
 main = do
   inputdata <- lines <$> readFile "input"
   let coordinates = [Point x y | y <- [1..length inputdata], x <- [1..length (head inputdata)]]
@@ -111,10 +112,6 @@ printGrid :: [(Point, Char)] -> IO ()
 printGrid lmap = do
   let lines = map (map snd) . groupBy (\(p1,_) (p2, _) -> p1._y == p2._y) $ sortOn fst lmap
   mapM_ putStrLn lines
-
-getNext2 :: PipeMap -> Point -> [Point]
-getNext2 pm p = let ps' = getAdjs2 p
-                in filter (\p -> (M.findWithDefault 'B' p pm) /= '+' ) ps'
 
 getAdjs2 :: Point -> [Point]
 getAdjs2 p = [p & x +~ 1, p & x -~ 1, p & y +~ 1, p & y -~ 1]
