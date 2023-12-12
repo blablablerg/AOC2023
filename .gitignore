@@ -1,6 +1,7 @@
 .envrc
 .dir-locals.el
 .direnv
+input
 *.hi
 *.o
 *.dyn_hi
