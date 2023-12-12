@@ -66,11 +66,6 @@ floodPipes pm = fp S.empty (S.empty, S.empty)
           then fl boundary (S.insert q visited) (nextpts ++ queue)
           else fl oldboundary (S.insert q visited) (nextpts ++ queue)
 
-fillMap :: PipeMap -> PipeMap
-fillMap m = let pts = M.keys m
-                pts' = connectPoints fillPoints pts \\ pts
-               in foldr ((\(p,c) m' -> M.insert p c m') . (, ',')) m pts'
-
 toPipe :: Char -> Point -> (Point, Char)
 toPipe c = (, c)
 
