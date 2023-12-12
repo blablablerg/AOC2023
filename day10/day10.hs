@@ -11,15 +11,12 @@ import           Data.List.Split
 import qualified Data.Map.Strict    as M
 import           Data.Maybe
 import           Data.Ord
+import qualified Data.Set           as S
 import           Debug.Trace
 import           Text.Pretty.Simple
 
-data Point = Point {_x :: Int, _y :: Int} deriving (Eq, Show)
+data Point = Point {_x :: Int, _y :: Int} deriving (Eq, Show, Ord)
 makeLenses ''Point
-
-instance Ord Point where
-  compare :: Point -> Point -> Ordering
-  compare  = comparing _y <> comparing _x
 
 type PipeMap = M.Map Point Char
 type PipeList = [(Point, Char)]
@@ -31,62 +28,67 @@ main = do
   let pipeMap = M.fromList $ zip coordinates (concat inputdata)
   let bigloop= head $ traversePipes pipeMap (getStart pipeMap)
   let part1 =  flip (-) 1 . maximum $ zipWith min [1 .. length bigloop] (reverse [1 .. length bigloop])
-  let filledMap2 = fillMap . M.map (const '.') . M.mapKeys doublePoint $ pipeMap
-  let bigloop2 = connectLoopPoints $ map doublePoint bigloop
-  let bigloop2pts = toPlusPoints bigloop2
-  let pipeMap2 = foldr (\(p,c) m -> M.insert p c m) filledMap2 bigloop2pts
-  let dots = M.keys $ M.filter (== '.') pipeMap2
-  let commasAndDots = M.filter (`elem` ['.',',']) pipeMap2
-  let (succs,fails) = floodPipes pipeMap2 (M.keys commasAndDots)
-  let part2 = length (dots `intersect` fails)
-  print $ part2
+  let doubleMap  = map doublePoint $ M.keys pipeMap
+  let bigloop2 = S.fromList . connectLoopPoints . map doublePoint $ bigloop
+  let dotkeys = S.difference (S.fromList doubleMap) bigloop2
+  let commakeys = flip S.difference (S.union bigloop2 dotkeys) . S.fromList . connectPoints fillPoints $ doubleMap
+  let commas = S.map (toPipe ',') commakeys
+  let plusses = S.map (toPipe '+')  bigloop2
+  let dots = S.map (toPipe '.') dotkeys
+  let pipeMap2 = M.fromList . S.toList $ S.unions [commas, plusses, dots]
+  let (succs,fails) = floodPipes pipeMap2 (S.toList (S.union commakeys dotkeys))
+  let part2 = length (dotkeys `S.intersection` fails)
+  print part2
 
-floodPipes :: PipeMap -> [Point] -> ([Point], [Point])
-floodPipes pm = fp [] ([],[])
+floodPipes :: PipeMap -> [Point] -> (S.Set Point, S.Set Point)
+floodPipes pm = fp S.empty (S.empty, S.empty)
   where
-    fp :: [Point] -> ([Point], [Point]) -> [Point] -> ([Point], [Point])
+    fp :: S.Set Point -> (S.Set Point, S.Set Point) -> [Point] -> (S.Set Point, S.Set Point)
     fp prevdots results [] = results
-    fp prevdots (succs, fails) (dot:dots) | dot `elem` prevdots = fp prevdots (succs, fails) dots
+    fp prevdots (succs, fails) (dot:dots) | dot `S.member` prevdots = fp prevdots (succs, fails) dots
                                           | otherwise =
        let (test, area) = flood dot
-       in fp (area ++ prevdots)
-             (if test then (area ++ succs, fails) else (succs, area ++ fails))
+       in fp (S.union area prevdots)
+             (if test then (S.union area succs, fails) else (succs, S.union area fails))
           dots
-    flood :: Point -> (Bool, [Point])
-    flood d = fl False [] [d]
+    flood :: Point -> (Bool, S.Set Point)
+    flood d = fl False S.empty [d]
 
-    fl :: Bool -> [Point] -> [Point] -> (Bool, [Point])
+    fl :: Bool -> S.Set Point -> [Point] -> (Bool,S.Set Point)
     fl ob          v       []        = (ob, v)
     fl oldboundary visited (q:queue) =
       let nexts = filter (\(pt, c) -> c /= '+')
                   . map (\np -> (np, M.findWithDefault 'B' np pm))
-                  $ filter (`notElem` visited) (getAdjs2 q)
+                  $ filter (`S.notMember` visited) (getAdjs2 q)
           boundary = any ((== 'B') . snd) ((q, (M.!) pm q):nexts)
           nextpts = map fst . filter (\(pt,c) -> c /= 'B') $ nexts
        in if boundary
-          then fl boundary (q:visited) (nextpts ++ queue)
-          else fl oldboundary (q:visited) (nextpts ++ queue)
+          then fl boundary (S.insert q visited) (nextpts ++ queue)
+          else fl oldboundary (S.insert q visited) (nextpts ++ queue)
 
 fillMap :: PipeMap -> PipeMap
 fillMap m = let pts = M.keys m
                 pts' = connectPoints fillPoints pts \\ pts
                in foldr ((\(p,c) m' -> M.insert p c m') . (, ',')) m pts'
 
-toPlusPoints :: [Point] -> [(Point, Char)]
-toPlusPoints = map (, '+')
+toPipe :: Char -> Point -> (Point, Char)
+toPipe c = (, c)
 
 doublePoint :: Point -> Point
 doublePoint (Point x y) = Point (2*x-1) (2 * y - 1)
 
 connectLoopPoints :: [Point] -> [Point]
-connectLoopPoints = connectPoints connectLoop
+connectLoopPoints = connectPoints' connectLoop
 
 connectPoints :: (Point -> Point -> Maybe [Point]) -> [Point] -> [Point]
-connectPoints f [] = []
-connectPoints f [x] = [x]
-connectPoints f (x:y:xs) = case f x y of
-                             Just x' -> (x:x') ++ connectPoints f (y:xs)
-                             Nothing -> x:connectPoints f (y:xs)
+connectPoints f pts = connectPoints' f $ sortBy (comparing _y <> comparing _x) pts
+
+connectPoints' :: (Point -> Point -> Maybe [Point]) -> [Point] -> [Point]
+connectPoints' f [] = []
+connectPoints' f [x] = [x]
+connectPoints' f (x:y:xs) = case f x y of
+                             Just x' -> (x:x') ++ connectPoints' f (y:xs)
+                             Nothing -> x:connectPoints' f (y:xs)
 
 connectLoop :: Point -> Point -> Maybe [Point]
 connectLoop p1 p2 | abs (p1._x - p2._x) == 2
@@ -98,38 +100,40 @@ connectLoop p1 p2 | abs (p1._y - p2._y) == 2
                     | otherwise      = Nothing
 
 fillPoints :: Point -> Point -> Maybe [Point]
-fillPoints p1 p2 | abs (p1._x - p2._x) == 2
-                    , p1._y == p2._y = let x' = min p1._x p2._x + 1
-                                       in Just [Point x' p1._y]
-fillPoints p1 p2 | abs (p1._y - p2._y) == 2
-                    -- , p2._x == 1
-                                 = let y' = min p1._y p2._y + 1
-                                       xs' = [p2._x .. p1._x]
-                                       in Just $ map (`Point` y') xs'
-                    | otherwise      = Nothing
+fillPoints p1 p2 | p1._y == p2._y && p1._x /= p2._x = let xs' = range p1._x p2._x
+                                                      in Just $ map (\x -> Point x p1._y) xs'
+fillPoints p1 p2 | abs (p1._y - p2._y) == 2 = let y' = min p1._y p2._y + 1
+                                                  xs' = [p2._x .. p1._x]
+                                              in Just $ map (`Point` y') xs'
+                 | otherwise   = Nothing
+
+range:: Int -> Int -> [Int]
+range x y | x <= y = [x + 1 .. y - 1]
+          | otherwise = [y + 1 .. x - 1]
 
 printGrid :: [(Point, Char)] -> IO ()
 printGrid lmap = do
-  let lines = map (map snd) . groupBy (\(p1,_) (p2, _) -> p1._y == p2._y) $ sortOn fst lmap
-  mapM_ putStrLn lines
+  let lines = map (map snd) . groupBy (\(p1,_) (p2, _) -> p1._y == p2._y) $ sortBy cmpLmap lmap
+  putStrLn $ unlines lines
+
+cmpLmap :: (Point, b) -> (Point, b) -> Ordering
+cmpLmap = comparing (_y . fst) <> comparing (_x . fst)
 
 getAdjs2 :: Point -> [Point]
 getAdjs2 p = [p & x +~ 1, p & x -~ 1, p & y +~ 1, p & y -~ 1]
 
 traversePipes :: PipeMap -> Point -> [[Point]]
-traversePipes pm start = tp [] start pm [[start]]
+traversePipes pm start = tp [] start [[start]]
   where
-    tp :: [[Point]] -> Point -> PipeMap -> [[Point]] -> [[Point]]
-    tp rs start pm []           = rs
-    tp rs start pm (path@(p:ps):paths) =
+    tp :: [[Point]] -> Point -> [[Point]] -> [[Point]]
+    tp rs start []           = rs
+    tp rs start (path@(p:ps):paths) =
       let prev = take 1 ps
           pds = getNext pm p \\ prev
           pPaths' = map (: path) pds
           hits = filter (\path' -> head path' == start) pPaths'
           paths' = filter (\path' -> head path' /= start) pPaths'
-          in --trace ("paths: " ++ show  (map length (paths' ++ paths))) $
-          tp (hits ++ rs) start pm (paths' ++ paths)
-
+       in tp (hits ++ rs) start (paths' ++ paths)
 
 getNext :: PipeMap -> Point -> [Point]
 getNext pm p = let ds = getAdjs pm p
