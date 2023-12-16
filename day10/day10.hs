@@ -60,11 +60,11 @@ floodPipes pm = fp S.empty (S.empty, S.empty)
       let nexts = filter (\(pt, c) -> c /= '+')
                   . map (\np -> (np, M.findWithDefault 'B' np pm))
                   $ filter (`S.notMember` visited) (getAdjs2 q)
-          boundary = any ((== 'B') . snd) ((q, (M.!) pm q):nexts)
+          boundary = if not oldboundary
+                     then any ((== 'B') . snd) ((q, (M.!) pm q):nexts)
+                     else oldboundary
           nextpts = map fst . filter (\(pt,c) -> c /= 'B') $ nexts
-       in if boundary
-          then fl boundary (S.insert q visited) (nextpts ++ queue)
-          else fl oldboundary (S.insert q visited) (nextpts ++ queue)
+       in fl boundary (S.insert q visited) (nextpts ++ queue)
 
 toPipe :: Char -> Point -> (Point, Char)
 toPipe c = (, c)
