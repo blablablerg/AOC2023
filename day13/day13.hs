@@ -18,8 +18,6 @@ import           Text.Pretty.Simple
 import           Data.Ord
 import           Data.Function
 
-type Pattern = [String]
-
 main :: IO ()
 main = do
   (Right patterns) <- P.parseOnly parsePatterns <$> T.readFile "input"
