@@ -82,7 +82,8 @@ calcLoad plf = fst $ foldr ((\x (acc,m) -> (x * m + acc , m + 1)) . length
 
 printMap :: Platform -> IO ()
 printMap m = do
-  let lines = map (map snd) . groupBy (\(p1,_) (p2, _) -> p1._y == p2._y) $ sortBy pointmapsort (M.toList m)
+  let lines = map (map snd) . groupBy (\(p1,_) (p2, _) -> p1._y == p2._y)
+              $ sortBy pointmapsort (M.toList m)
   printGrid lines
 
 pointmapsort :: (Point, b) -> (Point, b) -> Ordering
