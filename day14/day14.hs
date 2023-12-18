@@ -52,7 +52,7 @@ tiltLever plf d = tl (sortBy (pointsortd d) $ M.keys plf) plf d
         tl (q:qs) plf d | plf M.! q == 'O' =
                           let end = findEnd plf q
                               plf' = swapPlaces plf q end
-           in  tl qs plf' d
+                          in  tl qs plf' d
                         | otherwise = tl qs plf d
 
         findEnd plf pos | M.findWithDefault '#' (direction d pos) plf == '.'
