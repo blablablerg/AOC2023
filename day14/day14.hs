@@ -37,9 +37,9 @@ findCycle plf = fc [plf] plf
   where
     fc store plf =
       let plf' = tiltLever2 plf 1
-                   in case elemIndex plf' store of
-                        Nothing -> fc (plf':store) plf'
-                        Just i  -> (length store - i, i + 1)
+      in case elemIndex plf' store of
+           Nothing -> fc (plf':store) plf'
+           Just i  -> (length store - i, i + 1)
 
 tiltLever2 :: Platform -> Int -> Platform
 tiltLever2 plf n = foldl' tiltLever plf (take (4 * n)
@@ -52,11 +52,11 @@ tiltLever plf d = tl (sortBy (pointsortd d) $ M.keys plf) plf d
         tl (q:qs) plf d | plf M.! q == 'O' =
                           let end = findEnd plf q
                               plf' = swapPlaces plf q end
-                          in  tl qs plf' d
+                          in tl qs plf' d
                         | otherwise = tl qs plf d
 
         findEnd plf pos | M.findWithDefault '#' (direction d pos) plf == '.'
-                                             = findEnd plf (direction d pos)
+                          = findEnd plf (direction d pos)
                         | otherwise = pos
 
         swapPlaces plf a b = let va = plf M.! a
